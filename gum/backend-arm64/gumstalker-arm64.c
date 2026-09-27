@@ -3180,17 +3180,14 @@ gum_exec_ctx_write_prolog_helper (GumExecCtx * ctx,
   if (type == GUM_PROLOG_MINIMAL)
   {
 #ifndef G_OS_NONE
-    /* GumCpuContext.v[0:8] plus padding for v[8:32] */
-    for (i = 6; i != -2; i -= 2)
+    /* Preserve the whole guest vector state across host helper calls. */
+    for (i = 30; i != -2; i -= 2)
     {
-      gssize size = 2 * sizeof (GumArm64VectorReg);
-
-      if (i == 6)
-        size += (32 - 8) * sizeof (GumArm64VectorReg);
+      const gssize vector_pair_size = 2 * sizeof (GumArm64VectorReg);
 
       gum_arm64_writer_put_stp_reg_reg_reg_offset (cw,
           ARM64_REG_Q0 + i, ARM64_REG_Q1 + i,
-          ARM64_REG_X19, -size, GUM_INDEX_PRE_ADJUST);
+          ARM64_REG_X19, -vector_pair_size, GUM_INDEX_PRE_ADJUST);
     }
 #endif
 
@@ -3367,17 +3364,14 @@ gum_exec_ctx_write_epilog_helper (GumExecCtx * ctx,
         ARM64_REG_X20, 16, GUM_INDEX_POST_ADJUST);
 
 #ifndef G_OS_NONE
-    /* GumCpuContext.v[0:8] plus padding for v[8:32] */
-    for (i = 0; i != 8; i += 2)
+    /* Match the full vector save in the minimal prolog. */
+    for (i = 0; i != 32; i += 2)
     {
-      gssize size = 2 * sizeof (GumArm64VectorReg);
-
-      if (i == 6)
-        size += (32 - 8) * sizeof (GumArm64VectorReg);
+      const gssize vector_pair_size = 2 * sizeof (GumArm64VectorReg);
 
       gum_arm64_writer_put_ldp_reg_reg_reg_offset (cw,
           ARM64_REG_Q0 + i, ARM64_REG_Q1 + i,
-          ARM64_REG_X20, size, GUM_INDEX_POST_ADJUST);
+          ARM64_REG_X20, vector_pair_size, GUM_INDEX_POST_ADJUST);
     }
 #endif
   }
